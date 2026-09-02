@@ -1,7 +1,0 @@
-{
-  "name": "VintaRadi",
-  "description": "Nostaljik görünümlü, analog frekans ayarlı, gerçek zamanlı küresel internet radyosu ve çevrimdışı müzik platformu.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}
-
