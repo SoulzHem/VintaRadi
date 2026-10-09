@@ -371,8 +371,8 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
                   }`}
                 >
                   <div className="font-mono-vintage font-black text-[10px] sm:text-sm leading-tight">P{p.slot}</div>
-                  <div className="text-[7.5px] sm:text-[9px] font-mono truncate opacity-80 mx-auto">
-                    {isEmpty ? '--' : p.label}
+                  <div className="min-h-[2.2em] text-[8px] sm:text-[10px] font-mono leading-tight line-clamp-2 break-words opacity-90 mx-auto">
+                    {isEmpty ? '--' : p.label || `P${p.slot}`}
                   </div>
                 </button>
               );
