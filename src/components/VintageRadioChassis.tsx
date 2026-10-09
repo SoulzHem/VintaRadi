@@ -21,6 +21,7 @@ import {
   Minus,
   Plus,
   ListPlus,
+  Users,
 } from 'lucide-react';
 
 interface VintageRadioChassisProps {
@@ -175,16 +176,8 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
               </div>
             </div>
 
-            {/* Device connection and audio status */}
+            {/* Audio status */}
             <div className="flex items-center gap-1 sm:gap-2">
-              <div
-                className="inline-flex items-center gap-1 rounded-full border border-amber-700/40 bg-black/45 px-1.5 py-1 text-[8px] sm:px-2.5 sm:text-[10px] font-mono-vintage text-amber-200/90"
-                aria-label={onlineCount === null ? 'Gerçek zamanlı bağlantı yapılandırılmamış' : `Bağlı dinleyici sayısı: ${onlineCount}`}
-                title={onlineCount === null ? 'Gerçek zamanlı sayaç için Supabase yapılandırması gerekir' : 'Şu anda bağlı uygulama sekmeleri'}
-              >
-                <span className="text-amber-400">●</span>
-                <span>{onlineCount === null ? '—' : onlineCount} {lang === 'tr' ? 'bağlı' : 'online'}</span>
-              </div>
               <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 border border-amber-900/50 text-[11px] font-mono-vintage text-amber-300">
                 <div
                   className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${
@@ -236,6 +229,20 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+
+        <div className="my-1 sm:my-2 flex justify-start">
+          <div
+            className="inline-flex items-center gap-2 rounded-xl border border-amber-600/60 bg-black/60 px-3 py-1.5 text-amber-100 shadow-inner"
+            aria-label={onlineCount === null ? 'Gerçek zamanlı bağlantı yapılandırılmamış' : `Uygulaması açık dinleyici sekmesi: ${onlineCount}`}
+            title={onlineCount === null ? 'Canlı sayaç için Supabase bağlantısı gerekir' : 'Uygulaması şu anda açık olan tarayıcı sekmeleri; toplam ziyaretçi veya yalnızca çalan radyo sayısı değildir'}
+          >
+            <Users className="h-4 w-4 text-amber-400" />
+            <span className="text-xs font-bold">{onlineCount === null ? '—' : onlineCount}</span>
+            <span className="text-[10px] sm:text-xs text-amber-300/90">
+              {lang === 'tr' ? 'uygulaması açık' : 'app open'}
+            </span>
           </div>
         </div>
 
