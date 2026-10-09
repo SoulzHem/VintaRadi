@@ -139,6 +139,10 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    syncService.setListening(isPlaying);
+  }, [isPlaying]);
+
   // Pool of user-provided and directory stations.
   const allStations = React.useMemo(() => {
     const list = [...customStations, ...discoveredStations, ...explorerStations].filter(

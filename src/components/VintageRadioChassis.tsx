@@ -161,9 +161,9 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
         </div>
 
         {/* Top Header: Brand Name Badge, Language Switcher & Band Selector */}
-        <div className="flex flex-row items-center justify-between gap-1.5 sm:gap-2 pb-1.5 sm:pb-5 border-b border-amber-900/40">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1.5 sm:gap-2 pb-1.5 sm:pb-5 border-b border-amber-900/40">
           {/* Authentic Metallic Brand Emblem */}
-          <div className="flex items-center gap-1.5 sm:gap-3">
+          <div className="col-start-1 row-start-1 flex min-w-0 items-center gap-1.5 sm:gap-3">
             <div className="px-2 py-0.5 sm:px-3.5 sm:py-1.5 rounded-xl bg-gradient-to-r from-amber-900 via-[#3d2415] to-amber-950 border border-amber-600/60 shadow-lg flex items-center gap-1.5 sm:gap-2">
               <Radio className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-amber-400" />
               <div>
@@ -191,8 +191,19 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
             </div>
           </div>
 
+          <div
+            className="col-span-2 col-start-1 row-start-2 justify-self-center inline-flex items-center gap-1.5 rounded-lg border border-amber-600/60 bg-black/60 px-2.5 py-1 text-amber-100 shadow-inner sm:col-span-1 sm:col-start-2 sm:row-start-1 sm:gap-2 sm:px-3 sm:py-1.5"
+            aria-label={onlineCount === null ? 'Canlı dinleyici sayısı yapılandırılmamış' : `Şu anda ${onlineCount} kişi dinliyor`}
+            title={onlineCount === null ? 'Canlı dinleyici sayısı için Supabase bağlantısı gerekir' : 'Radyo yayını şu anda açık olan uygulama sekmeleri'}
+          >
+            <Users className="h-3.5 w-3.5 text-amber-400 sm:h-4 sm:w-4" />
+            <span className="whitespace-nowrap text-[10px] font-semibold sm:text-xs">
+              {onlineCount === null ? '—' : onlineCount} {lang === 'tr' ? 'kişi dinliyor' : 'listening'}
+            </span>
+          </div>
+
           {/* Right Header Controls: Language Selector & Band Buttons */}
-          <div className="flex items-center gap-1 sm:gap-3">
+          <div className="col-start-2 row-start-1 flex items-center justify-self-end gap-1 sm:col-start-3 sm:gap-3">
             {/* Quick Language Dropdown */}
             {onLanguageChange && (
               <div className="relative flex items-center">
@@ -229,20 +240,6 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
                 </button>
               ))}
             </div>
-          </div>
-        </div>
-
-        <div className="my-1 sm:my-2 flex justify-start">
-          <div
-            className="inline-flex items-center gap-2 rounded-xl border border-amber-600/60 bg-black/60 px-3 py-1.5 text-amber-100 shadow-inner"
-            aria-label={onlineCount === null ? 'Gerçek zamanlı bağlantı yapılandırılmamış' : `Uygulaması açık dinleyici sekmesi: ${onlineCount}`}
-            title={onlineCount === null ? 'Canlı sayaç için Supabase bağlantısı gerekir' : 'Uygulaması şu anda açık olan tarayıcı sekmeleri; toplam ziyaretçi veya yalnızca çalan radyo sayısı değildir'}
-          >
-            <Users className="h-4 w-4 text-amber-400" />
-            <span className="text-xs font-bold">{onlineCount === null ? '—' : onlineCount}</span>
-            <span className="text-[10px] sm:text-xs text-amber-300/90">
-              {lang === 'tr' ? 'uygulaması açık' : 'app open'}
-            </span>
           </div>
         </div>
 

@@ -39,6 +39,7 @@ class RealtimeSyncService {
   private roomPresenceListeners: Array<(count: number) => void> = [];
   private onlineListeners: Array<(count: number) => void> = [];
   private connected = false;
+  private isListening = false;
 
   constructor() {
     this.clientId = 'user_' + Math.random().toString(36).substring(2, 9);
@@ -81,10 +82,22 @@ class RealtimeSyncService {
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
-          void this.globalChannel?.track({ name: this.userName, joinedAt: Date.now() });
+          if (this.isListening) void this.trackListeningPresence();
         }
       });
     this.connectRoom();
+  }
+
+  public setListening(isListening: boolean) {
+    this.isListening = isListening;
+    if (!this.globalChannel) return;
+    if (isListening) void this.trackListeningPresence();
+    else void this.globalChannel.untrack();
+  }
+
+  private async trackListeningPresence() {
+    const status = await this.globalChannel?.track({ name: this.userName, joinedAt: Date.now() });
+    if (status && status !== 'ok') console.warn('Listener presence was not tracked:', status);
   }
 
   public isRealtimeConfigured(): boolean {
