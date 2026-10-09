@@ -17,6 +17,7 @@ import { syncService, SyncPayload } from './services/syncService';
 import { RadioApiService, resolveCountryInfo } from './services/radioApi';
 import { THEMES } from './utils/themeConfig';
 import { generateWeeklyRecommendation } from './utils/recommendationEngine';
+import { isPlayableStreamUrl } from './utils/streamUrl';
 import { getTranslation } from './i18n/translations';
 
 /** API sonuçlarını tekrarsız şekilde havuza ekler. */
@@ -50,6 +51,7 @@ export default function App() {
   const [recordings, setRecordings] = useState<OfflineRecording[]>([]);
   const [customStations, setCustomStations] = useState<RadioStation[]>(() => StorageService.getCustomStations());
   const [discoveredStations, setDiscoveredStations] = useState<RadioStation[]>([]);
+  const [unavailableStationIds, setUnavailableStationIds] = useState<Set<string>>(() => new Set());
   // Keşfet modalinde yüklenen sonuçlar (kadran şeridiyle paylaşılır)
   const [explorerStations, setExplorerStations] = useState<RadioStation[]>([]);
 
@@ -121,10 +123,10 @@ export default function App() {
   // Pool of user-provided and directory stations.
   const allStations = React.useMemo(() => {
     const list = [...customStations, ...discoveredStations, ...explorerStations].filter(
-      (station) => !/\.m3u8(?:$|\?)/i.test(station.url),
+      (station) => isPlayableStreamUrl(station.url) && !unavailableStationIds.has(station.id),
     );
     return list.filter((station, index, all) => all.findIndex((item) => item.id === station.id || item.url === station.url) === index);
-  }, [customStations, discoveredStations, explorerStations]);
+  }, [customStations, discoveredStations, explorerStations, unavailableStationIds]);
 
   // Weekly recommendation
   const weeklyRecommendation = React.useMemo(() => {
@@ -134,8 +136,13 @@ export default function App() {
   // Şerit havuzu: keşfet (yerleşikler yok).
   const dialStations = React.useMemo(() => {
     const list = [...discoveredStations, ...explorerStations];
-    return list.filter((station, index, all) => all.findIndex((item) => item.id === station.id || item.url === station.url) === index);
-  }, [discoveredStations, explorerStations]);
+    return list.filter(
+      (station, index, all) =>
+        isPlayableStreamUrl(station.url) &&
+        !unavailableStationIds.has(station.id) &&
+        all.findIndex((item) => item.id === station.id || item.url === station.url) === index,
+    );
+  }, [discoveredStations, explorerStations, unavailableStationIds]);
   // Şerit + SCAN havuzu: seçili ülkeye göre filtrelenir (Tümü = hepsi)
   const dialFiltered = React.useMemo(() => {
     if (scanCountry === 'ALL') return dialStations;
@@ -457,17 +464,44 @@ export default function App() {
   // Step frequency down
   const handleStepPrev = () => {
     if (settings.hapticFeedback && navigator.vibrate) navigator.vibrate(5);
-    const range = FREQUENCY_RANGES[band];
-    const newFreq = Number(Math.max(range.min, frequency - range.step).toFixed(band === 'AM' ? 0 : 1));
-    setFrequency(newFreq);
+    const stations = dialFiltered
+      .filter((station) => station.band === band)
+      .sort((first, second) => first.frequency - second.frequency);
+    if (stations.length === 0) {
+      showToast('İstasyon bulunamadı', 'Önce Keşfet bölümünden istasyonları yükleyin.');
+      return;
+    }
+
+    const currentIndex = stations.findIndex((station) => station.id === activeStation?.id);
+    let previousIndex: number;
+    if (currentIndex >= 0) {
+      previousIndex = (currentIndex - 1 + stations.length) % stations.length;
+    } else {
+      previousIndex = stations.findLastIndex((station) => station.frequency < frequency);
+      if (previousIndex < 0) previousIndex = stations.length - 1;
+    }
+    tuneToStation(stations[previousIndex], true);
   };
 
   // Step frequency up
   const handleStepNext = () => {
     if (settings.hapticFeedback && navigator.vibrate) navigator.vibrate(5);
-    const range = FREQUENCY_RANGES[band];
-    const newFreq = Number(Math.min(range.max, frequency + range.step).toFixed(band === 'AM' ? 0 : 1));
-    setFrequency(newFreq);
+    const stations = dialFiltered
+      .filter((station) => station.band === band)
+      .sort((first, second) => first.frequency - second.frequency);
+    if (stations.length === 0) {
+      showToast('İstasyon bulunamadı', 'Önce Keşfet bölümünden istasyonları yükleyin.');
+      return;
+    }
+
+    const currentIndex = stations.findIndex((station) => station.id === activeStation?.id);
+    const nextStation = stations.find((station) => station.frequency > frequency);
+    const nextIndex = currentIndex >= 0
+      ? (currentIndex + 1) % stations.length
+      : nextStation
+        ? stations.indexOf(nextStation)
+        : 0;
+    tuneToStation(stations[nextIndex], true);
   };
 
   // Auto Scan: keşfet havuzundaki istasyonları frekans sırasıyla gez.
@@ -645,7 +679,7 @@ export default function App() {
         return {
           slot,
           stationId: activeStation.id,
-          label: `${activeStation.frequency} ${activeStation.name.substring(0, 5).toUpperCase()}`,
+          label: activeStation.name,
         };
       }
       return p;
@@ -653,6 +687,13 @@ export default function App() {
     setPresetButtons(updated);
     StorageService.savePresetButtons(updated);
     showToast(`Hafızaya Kaydedildi: P${slot}`, activeStation.name);
+  };
+
+  const markStationUnavailable = (station: RadioStation) => {
+    setUnavailableStationIds((current) => new Set(current).add(station.id));
+    setIsPlaying(false);
+    setIsLoadingStream(false);
+    showToast('Yayın açılamadı', `${station.name} bu oturumda istasyon listesinden çıkarıldı.`);
   };
 
   // Live Stream Audio Recording to Offline Cassette Tape
@@ -781,14 +822,10 @@ export default function App() {
         handleTogglePlay();
       } else if (e.code === 'ArrowRight') {
         e.preventDefault();
-        const step = band === 'FM' ? 0.1 : band === 'AM' ? 10 : 0.05;
-        const range = FREQUENCY_RANGES[band];
-        setFrequency((f) => Math.min(range.max, Number((f + step).toFixed(2))));
+        handleStepNext();
       } else if (e.code === 'ArrowLeft') {
         e.preventDefault();
-        const step = band === 'FM' ? 0.1 : band === 'AM' ? 10 : 0.05;
-        const range = FREQUENCY_RANGES[band];
-        setFrequency((f) => Math.max(range.min, Number((f - step).toFixed(2))));
+        handleStepPrev();
       } else if (['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6'].includes(e.code)) {
         const slot = parseInt(e.code.replace('Digit', ''));
         handleSelectPreset(slot);
@@ -797,7 +834,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [band, isPlaying, activeStation]);
+  }, [band, isPlaying, activeStation, dialFiltered, frequency, presetButtons, settings.hapticFeedback]);
 
   // MediaSession API Integration for Background Audio Playback & Lock Screen Controls
   useEffect(() => {
@@ -877,6 +914,14 @@ export default function App() {
         onEnded={() => setIsPlaying(false)}
         onError={() => {
           setIsLoadingStream(false);
+          const audio = audioRef.current;
+          if (!audio?.currentSrc || !activeStation || unavailableStationIds.has(activeStation.id)) return;
+          if (!isPlayableStreamUrl(activeStation.url)) return;
+          const currentUrl = new URL(audio.currentSrc);
+          const stationUrl = new URL(activeStation.url);
+          if (currentUrl.origin === stationUrl.origin && currentUrl.pathname === stationUrl.pathname) {
+            markStationUnavailable(activeStation);
+          }
         }}
         className="hidden"
       />
@@ -988,6 +1033,7 @@ export default function App() {
         activeStation={activeStation}
         isPlaying={isPlaying}
         favorites={favorites}
+        unavailableStationIds={unavailableStationIds}
         onToggleFavorite={handleToggleFavorite}
         onAddCustomStation={handleAddCustomStation}
         onShareStation={(st) => {

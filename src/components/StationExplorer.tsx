@@ -22,6 +22,7 @@ interface StationExplorerProps {
   activeStation: RadioStation | null;
   isPlaying: boolean;
   favorites: string[];
+  unavailableStationIds: Set<string>;
   onToggleFavorite: (station: RadioStation) => void;
   onAddCustomStation: (station: RadioStation) => void;
   onShareStation: (station: RadioStation) => void;
@@ -69,6 +70,7 @@ export const StationExplorer: React.FC<StationExplorerProps> = ({
   activeStation,
   isPlaying,
   favorites,
+  unavailableStationIds,
   onToggleFavorite,
   onAddCustomStation,
   onShareStation,
@@ -91,6 +93,7 @@ export const StationExplorer: React.FC<StationExplorerProps> = ({
   const [customCountry, setCustomCountry] = useState('Custom Station');
 
   const t = (key: Parameters<typeof getTranslation>[1]) => getTranslation((language || 'tr') as LanguageCode, key);
+  const visibleStations = stations.filter((station) => !unavailableStationIds.has(station.id));
 
   useEffect(() => {
     if (isOpen) {
@@ -287,14 +290,14 @@ export const StationExplorer: React.FC<StationExplorerProps> = ({
               <RotateCw className="w-7 h-7 sm:w-8 sm:h-8 animate-spin text-amber-500" />
               <p className="text-xs sm:text-sm font-mono-vintage">{t('loadingStations')}</p>
             </div>
-          ) : stations.length === 0 ? (
+          ) : visibleStations.length === 0 ? (
             <div className="col-span-full h-48 sm:h-64 flex flex-col items-center justify-center gap-2 text-amber-400/60 text-center p-4">
               <Radio className="w-8 h-8 sm:w-10 sm:h-10 stroke-1 text-amber-500/40" />
               <p className="text-xs sm:text-sm font-semibold text-amber-200">{t('noStationsFound')}</p>
               <p className="text-[11px] text-amber-400/50">{t('noStationsFoundSub')}</p>
             </div>
           ) : (
-            stations.map((st) => {
+            visibleStations.map((st) => {
               const isActive = activeStation?.id === st.id;
               const isFav = favorites.includes(st.id);
 
@@ -473,4 +476,3 @@ export const StationExplorer: React.FC<StationExplorerProps> = ({
     </div>
   );
 };
-

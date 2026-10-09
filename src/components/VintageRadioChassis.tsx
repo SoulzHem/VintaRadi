@@ -348,7 +348,7 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
             {t('memoryPresets')}
           </span>
 
-          <div className="grid grid-cols-10 gap-1 sm:gap-2 w-full">
+          <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-10 gap-1 sm:gap-2 w-full">
             {presets.map((p) => {
               const isMatched = Boolean(p.stationId) && activeStation?.id === p.stationId;
               const isEmpty = !p.stationId;
@@ -372,7 +372,7 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
                 >
                   <div className="font-mono-vintage font-black text-[10px] sm:text-sm leading-tight">P{p.slot}</div>
                   <div className="text-[7.5px] sm:text-[9px] font-mono truncate opacity-80 mx-auto">
-                    {isEmpty ? '--' : p.label.split(' ')[0]}
+                    {isEmpty ? '--' : p.label}
                   </div>
                 </button>
               );

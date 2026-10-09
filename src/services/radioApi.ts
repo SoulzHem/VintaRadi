@@ -1,5 +1,6 @@
 import { RadioStation, FrequencyBand } from '../types';
 import { StorageService } from './storage';
+import { isPlayableStreamUrl } from '../utils/streamUrl';
 
 // Radio-Browser API mirrors with automatic fallback
 const API_MIRRORS = [
@@ -7,6 +8,10 @@ const API_MIRRORS = [
   'https://nl1.api.radio-browser.info',
   'https://at1.api.radio-browser.info',
 ];
+
+const KNOWN_UNPLAYABLE_STATION_IDS = new Set([
+  'rb_15812c43-c571-4770-9065-b64b4d5338d1',
+]);
 
 let currentMirrorIndex = 0;
 
@@ -183,7 +188,11 @@ export const RadioApiService = {
       };
 
       const mappedStations: RadioStation[] = (data as RadioBrowserItem[])
-        .filter((item) => item.url_resolved || item.url)
+        .filter(
+          (item) =>
+            !KNOWN_UNPLAYABLE_STATION_IDS.has(`rb_${item.stationuuid}`) &&
+            isPlayableStreamUrl(item.url_resolved || item.url || ''),
+        )
         .map((item) => {
           const { frequency, band: assignedBand } = assignRealisticFrequency(item.stationuuid, item.name, pickBandForStation(item.stationuuid, item.name));
           const rawTags = (item.tags || '').split(',').map(t => t.trim()).filter(Boolean);
@@ -225,6 +234,8 @@ export const RadioApiService = {
       
       // Filter cached items
       const cachedMatches = cached.filter(st => {
+        if (KNOWN_UNPLAYABLE_STATION_IDS.has(st.id)) return false;
+        if (!isPlayableStreamUrl(st.url)) return false;
         if (band && band !== 'ALL' && st.band !== band) return false;
         if (countryAliases.length > 0 || targetCode) {
           const stCountry = (st.country || '').toLowerCase();
