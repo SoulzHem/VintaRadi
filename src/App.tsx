@@ -41,6 +41,7 @@ import { ShareSyncModal } from './components/ShareSyncModal';
 import { SettingsModal } from './components/SettingsModal';
 import { LegalInfoModal } from './components/LegalInfoModal';
 import { UserGuideModal } from './components/UserGuideModal';
+import { Users } from 'lucide-react';
 
 export default function App() {
   // App Persistent State
@@ -92,7 +93,8 @@ export default function App() {
 
   // Real-time Sync & Airwave Room State
   const [roomId, setRoomId] = useState<string>(syncService.getRoomId());
-  const [listenersCount, setListenersCount] = useState<number>(1);
+  const [listenersCount, setListenersCount] = useState<number | null>(null);
+  const [onlineCount, setOnlineCount] = useState<number | null>(null);
   const [chatMessages, setChatMessages] = useState<SyncMessage[]>([]);
   const [floatingReactions, setFloatingReactions] = useState<Array<{ id: string; emoji: string; x: number }>>([]);
 
@@ -125,6 +127,17 @@ export default function App() {
   useEffect(() => () => {
     hlsRef.current?.destroy();
     hlsRef.current = null;
+  }, []);
+
+  useEffect(() => {
+    if (!syncService.isRealtimeConfigured()) return;
+    const unsubscribeOnline = syncService.subscribeOnlineCount(setOnlineCount);
+    const unsubscribeRoom = syncService.subscribeRoomPresence(setListenersCount);
+    syncService.connect();
+    return () => {
+      unsubscribeOnline();
+      unsubscribeRoom();
+    };
   }, []);
 
   // Pool of user-provided and directory stations.
@@ -272,7 +285,6 @@ export default function App() {
           }
         }
       } else if (payload.type === 'LISTENER_JOIN') {
-        setListenersCount((prev) => prev + 1);
         if (payload.senderId !== syncService.getClientId()) {
           showToast('👋 Yeni Dinleyici Katıldı', `${payload.senderName} canlı frekansa bağlandı.`);
         }
@@ -1019,6 +1031,16 @@ export default function App() {
       )}
 
       {/* Main Radio Dashboard */}
+      <div className="relative z-10 flex justify-center px-3 pt-2 sm:pt-0">
+        <div
+          className="inline-flex items-center gap-2 rounded-full border border-amber-700/40 bg-black/45 px-3 py-1.5 text-xs text-amber-200/90"
+          aria-label={onlineCount === null ? 'Gerçek zamanlı bağlantı yapılandırılmamış' : `Bağlı dinleyici sayısı: ${onlineCount}`}
+          title={onlineCount === null ? 'Gerçek zamanlı sayaç için Supabase yapılandırması gerekir' : 'Şu anda bağlı uygulama sekmeleri'}
+        >
+          <Users className="h-3.5 w-3.5 text-amber-400" />
+          <span>{onlineCount === null ? '—' : onlineCount} {settings.language === 'tr' ? 'bağlı' : 'online'}</span>
+        </div>
+      </div>
       <main className="flex-1 flex items-center justify-center py-1 sm:py-4 px-1 sm:px-3 z-10">
         <VintageRadioChassis
           band={band}
@@ -1156,7 +1178,7 @@ export default function App() {
         onClose={() => setIsShareOpen(false)}
         station={activeStation}
         roomId={roomId}
-        listenersCount={listenersCount}
+        listenersCount={syncService.isRealtimeConfigured() ? listenersCount : null}
         messages={chatMessages}
         onJoinRoom={handleJoinRoom}
         onSendMessage={handleSendMessage}

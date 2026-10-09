@@ -1,4 +1,5 @@
 import { FrequencyBand, RadioStation, SyncMessage } from '../types';
+import { createClient, RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 
 export type SyncEventType =
   | 'TUNE_STATION'
@@ -32,6 +33,12 @@ class RealtimeSyncService {
   private userName: string = '';
   private clientId: string = '';
   private listeners: Array<(payload: SyncPayload) => void> = [];
+  private supabase: SupabaseClient | null = null;
+  private roomChannel: RealtimeChannel | null = null;
+  private globalChannel: RealtimeChannel | null = null;
+  private roomPresenceListeners: Array<(count: number) => void> = [];
+  private onlineListeners: Array<(count: number) => void> = [];
+  private connected = false;
 
   constructor() {
     this.clientId = 'user_' + Math.random().toString(36).substring(2, 9);
@@ -53,6 +60,73 @@ class RealtimeSyncService {
         console.warn('BroadcastChannel error:', err);
       }
     }
+  }
+
+  public connect() {
+    if (this.connected) return;
+    this.connected = true;
+    const { VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY } = import.meta.env;
+    if (!VITE_SUPABASE_URL || !VITE_SUPABASE_ANON_KEY) {
+      console.warn('Supabase Realtime is not configured; cross-device rooms and online presence are disabled.');
+      return;
+    }
+    this.supabase = createClient(VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY);
+    this.globalChannel = this.supabase.channel('vintaradi:global-presence', {
+      config: { presence: { key: this.clientId } },
+    });
+    this.globalChannel
+      .on('presence', { event: 'sync' }, () => {
+        const count = Object.keys(this.globalChannel?.presenceState() || {}).length;
+        this.onlineListeners.forEach((callback) => callback(count));
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          void this.globalChannel?.track({ name: this.userName, joinedAt: Date.now() });
+        }
+      });
+    this.connectRoom();
+  }
+
+  public isRealtimeConfigured(): boolean {
+    return Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+  }
+
+  private connectRoom() {
+    if (!this.supabase) return;
+    if (this.roomChannel) void this.supabase.removeChannel(this.roomChannel);
+    const roomChannel = this.supabase.channel(`vintaradi:room:${this.currentRoomId}`, {
+      config: { broadcast: { self: false }, presence: { key: this.clientId } },
+    });
+    this.roomChannel = roomChannel;
+    roomChannel
+      .on('broadcast', { event: 'sync' }, ({ payload }) => {
+        if (payload && payload.roomId === this.currentRoomId && payload.senderId !== this.clientId) {
+          this.notifyListeners(payload as SyncPayload);
+        }
+      })
+      .on('presence', { event: 'sync' }, () => {
+        const count = Object.keys(roomChannel.presenceState()).length;
+        this.roomPresenceListeners.forEach((callback) => callback(count));
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          void roomChannel.track({ name: this.userName, joinedAt: Date.now() });
+        }
+      });
+  }
+
+  public subscribeRoomPresence(callback: (count: number) => void): () => void {
+    this.roomPresenceListeners.push(callback);
+    return () => {
+      this.roomPresenceListeners = this.roomPresenceListeners.filter((listener) => listener !== callback);
+    };
+  }
+
+  public subscribeOnlineCount(callback: (count: number) => void): () => void {
+    this.onlineListeners.push(callback);
+    return () => {
+      this.onlineListeners = this.onlineListeners.filter((listener) => listener !== callback);
+    };
   }
 
   public subscribe(callback: (payload: SyncPayload) => void): () => void {
@@ -87,6 +161,7 @@ class RealtimeSyncService {
 
   public joinRoom(roomId: string) {
     this.currentRoomId = roomId.toUpperCase().trim();
+    this.connectRoom();
     this.broadcast({
       type: 'LISTENER_JOIN',
       roomId: this.currentRoomId,
@@ -108,6 +183,13 @@ class RealtimeSyncService {
       } catch (err) {
         console.error('Broadcast send error:', err);
       }
+    }
+    if (this.roomChannel) {
+      void this.roomChannel.send({ type: 'broadcast', event: 'sync', payload })
+        .then((status) => {
+          if (status !== 'ok') console.warn('Realtime room message was not delivered:', status);
+        })
+        .catch((error: unknown) => console.error('Realtime room message failed:', error));
     }
   }
 

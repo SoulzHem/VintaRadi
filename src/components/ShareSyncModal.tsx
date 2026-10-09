@@ -20,7 +20,7 @@ interface ShareSyncModalProps {
   onClose: () => void;
   station: RadioStation | null;
   roomId: string;
-  listenersCount: number;
+  listenersCount: number | null;
   messages: SyncMessage[];
   onJoinRoom: (roomId: string) => void;
   onSendMessage: (text: string) => void;
@@ -223,12 +223,12 @@ export const ShareSyncModal: React.FC<ShareSyncModalProps> = ({
             {/* Room Info Bar */}
             <div className="p-3 rounded-xl bg-black/40 border border-amber-900/40 flex items-center justify-between mb-3 text-xs">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className={`w-2.5 h-2.5 rounded-full ${syncService.isRealtimeConfigured() ? 'bg-emerald-400 animate-ping' : 'bg-amber-500'}`} />
                 <span className="font-mono-vintage font-bold text-amber-300">
                   ODA: {roomId}
                 </span>
                 <span className="px-2 py-0.5 rounded-full bg-amber-950 border border-amber-700/50 text-[10px] text-amber-200">
-                  {listenersCount} Dinleyici
+                  {listenersCount === null ? 'Yerel sekmeler' : `${listenersCount} Dinleyici`}
                 </span>
               </div>
 
