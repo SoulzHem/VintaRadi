@@ -1,8 +1,3 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   FrequencyBand,
@@ -15,7 +10,7 @@ import {
   SyncMessage,
   WeeklyRecommendation,
 } from './types';
-import { CURATED_STATIONS, FREQUENCY_RANGES } from './data/curatedStations';
+import { FREQUENCY_RANGES } from './data/frequencyRanges';
 import { StorageService, DEFAULT_SETTINGS, DEFAULT_EQ } from './services/storage';
 import { audioEngine } from './services/audioEngine';
 import { syncService, SyncPayload } from './services/syncService';
@@ -24,14 +19,10 @@ import { THEMES } from './utils/themeConfig';
 import { generateWeeklyRecommendation } from './utils/recommendationEngine';
 import { getTranslation } from './i18n/translations';
 
-// Yerleşik istasyon id'leri — şerit havuzuna (keşfet) karışmamaları için elenir
-const CURATED_IDS = new Set(CURATED_STATIONS.map((s) => s.id));
-
-/** API sonucunu havuza ekler (yerleşikler hariç, tekrarsız) */
+/** API sonuçlarını tekrarsız şekilde havuza ekler. */
 function mergeApiStations(prev: RadioStation[], incoming: RadioStation[]): RadioStation[] {
   const merged = [...prev];
   for (const st of incoming) {
-    if (CURATED_IDS.has(st.id)) continue;
     if (!merged.some((m) => m.id === st.id || m.url === st.url)) merged.push(st);
   }
   return merged;
@@ -62,7 +53,7 @@ export default function App() {
   // Keşfet modalinde yüklenen sonuçlar (kadran şeridiyle paylaşılır)
   const [explorerStations, setExplorerStations] = useState<RadioStation[]>([]);
 
-  // Açılışta global havuz (yerleşikler elenir, sadece API istasyonları)
+  // Load the station directory on startup.
   useEffect(() => {
     let cancelled = false;
     RadioApiService.searchStations({ limit: 200 })
@@ -78,7 +69,7 @@ export default function App() {
   // Radio Tuner State
   const [band, setBand] = useState<FrequencyBand>(settings.defaultBand || 'FM');
   const [scanCountry, setScanCountry] = useState('TR');
-  const [frequency, setFrequency] = useState<number>(88.2); // Default to Joy FM
+  const [frequency, setFrequency] = useState<number>(88.2);
   const [activeStation, setActiveStation] = useState<RadioStation | null>(null);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isLoadingStream, setIsLoadingStream] = useState<boolean>(false);
@@ -127,11 +118,10 @@ export default function App() {
   const isScanningRef = useRef(false);
   const scanCursorRef = useRef(0);
 
-  // Pool of all known stations (curated > custom > keşfet).
+  // Pool of user-provided and directory stations.
   const allStations = React.useMemo(() => {
-    const unavailableStationIds = new Set(['fm-voyage-istanbul', 'fm-jazz24-seattle']);
-    const list = [...CURATED_STATIONS, ...customStations, ...discoveredStations, ...explorerStations].filter(
-      (station) => !unavailableStationIds.has(station.id) && !/\.m3u8(?:$|\?)/i.test(station.url),
+    const list = [...customStations, ...discoveredStations, ...explorerStations].filter(
+      (station) => !/\.m3u8(?:$|\?)/i.test(station.url),
     );
     return list.filter((station, index, all) => all.findIndex((item) => item.id === station.id || item.url === station.url) === index);
   }, [customStations, discoveredStations, explorerStations]);
@@ -248,13 +238,6 @@ export default function App() {
       }
     }
 
-    // Default start station
-    const initialStation = CURATED_STATIONS[0];
-    if (initialStation) {
-      setActiveStation(initialStation);
-      setFrequency(initialStation.frequency);
-      setBand(initialStation.band);
-    }
   }, []);
 
   // 2. Setup Real-time Sync Subscription
@@ -447,8 +430,9 @@ export default function App() {
     } else {
       if (activeStation) {
         playAudioStream(activeStation.url);
-      } else if (CURATED_STATIONS[0]) {
-        tuneToStation(CURATED_STATIONS[0], true);
+      } else {
+        showToast('Önce bir istasyon seçin', 'Keşfet bölümünden bir yayın seçebilir veya özel akış ekleyebilirsiniz.');
+        return;
       }
       syncService.broadcastPlayState(true, activeStation?.id);
     }
@@ -581,6 +565,28 @@ export default function App() {
     StorageService.saveFavorites(updated);
   };
 
+  const handleAddStationToPlaylist = (playlistId: string, station: RadioStation) => {
+    const playlist = playlists.find((item) => item.id === playlistId);
+    if (!playlist) return;
+    if (playlist.stationIds.includes(station.id)) {
+      showToast('İstasyon listede zaten var', playlist.name);
+      return;
+    }
+
+    const updated = playlists.map((item) =>
+      item.id === playlistId
+        ? {
+            ...item,
+            stationIds: [...item.stationIds, station.id],
+            updatedAt: new Date().toISOString(),
+          }
+        : item,
+    );
+    setPlaylists(updated);
+    StorageService.savePlaylists(updated);
+    showToast('Çalma listesine eklendi', `${station.name} • ${playlist.name}`);
+  };
+
   // Create Playlist
   const handleCreatePlaylist = (name: string, desc: string, color: string) => {
     const newPl: Playlist = {
@@ -620,7 +626,7 @@ export default function App() {
     showToast('Özel Radyo Eklendi', `${st.name} (${st.frequency} ${st.band})`);
   };
 
-  // Mechanical Preset Buttons (1-6)
+  // Mechanical Preset Buttons (1-20)
   const handleSelectPreset = (slot: number) => {
     if (settings.hapticFeedback && navigator.vibrate) navigator.vibrate(15);
     const preset = presetButtons.find((p) => p.slot === slot);
@@ -817,8 +823,6 @@ export default function App() {
         await audioEngine.resumeContext();
         if (activeStation) {
           audioRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
-        } else if (CURATED_STATIONS[0]) {
-          tuneToStation(CURATED_STATIONS[0], true);
         }
       };
 
@@ -925,14 +929,18 @@ export default function App() {
           onVolumeChange={handleVolumeChange}
           isPlaying={isPlaying}
           onTogglePlay={handleTogglePlay}
-          isRecording={isRecording}
-          onToggleRecording={handleToggleRecording}
           stations={dialFiltered}
           scanCountries={scanCountries}
           scanCountry={scanCountry}
           onScanCountryChange={setScanCountry}
           sameFrequencyCount={sameFrequencyCount}
           activeStation={activeStation}
+          isFavorite={Boolean(activeStation && favorites.includes(activeStation.id))}
+          playlists={playlists}
+          onToggleFavorite={() => {
+            if (activeStation) handleToggleFavorite(activeStation);
+          }}
+          onAddStationToPlaylist={handleAddStationToPlaylist}
           isTuned={isTuned}
           isLoadingStream={isLoadingStream}
           vuLeft={vuLeft}
@@ -958,7 +966,6 @@ export default function App() {
             setFavoritesActiveTab('favorites');
             setIsFavoritesOpen(true);
           }}
-          onOpenRecordings={() => setIsRecordingsOpen(true)}
           onOpenSleepTimer={() => setIsSleepTimerOpen(true)}
           onOpenShare={() => setIsShareOpen(true)}
           onOpenSettings={() => setIsSettingsOpen(true)}

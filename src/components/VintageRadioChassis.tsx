@@ -1,5 +1,5 @@
-import React from 'react';
-import { FrequencyBand, RadioStation, AppSettings, LanguageCode } from '../types';
+import React, { useState } from 'react';
+import { FrequencyBand, Playlist, RadioStation, AppSettings, LanguageCode } from '../types';
 import { ThemeConfig } from '../utils/themeConfig';
 import { AnalogTunerDial } from './AnalogTunerDial';
 import { AnalogVuMeter } from './AnalogVuMeter';
@@ -7,12 +7,10 @@ import { getTranslation, SUPPORTED_LANGUAGES } from '../i18n/translations';
 import {
   Play,
   Pause,
-  Circle,
   Sliders,
   Moon,
   Globe,
   Heart,
-  CassetteTape,
   Share2,
   Settings,
   Radio,
@@ -22,6 +20,7 @@ import {
   HelpCircle,
   Minus,
   Plus,
+  ListPlus,
 } from 'lucide-react';
 
 interface VintageRadioChassisProps {
@@ -33,14 +32,16 @@ interface VintageRadioChassisProps {
   onVolumeChange: (vol: number) => void;
   isPlaying: boolean;
   onTogglePlay: () => void;
-  isRecording: boolean;
-  onToggleRecording: () => void;
   stations: RadioStation[];
   scanCountries: Array<{ code: string; label: string }>;
   scanCountry: string;
   onScanCountryChange: (country: string) => void;
   sameFrequencyCount: number;
   activeStation: RadioStation | null;
+  isFavorite: boolean;
+  playlists: Playlist[];
+  onToggleFavorite: () => void;
+  onAddStationToPlaylist: (playlistId: string, station: RadioStation) => void;
   isTuned: boolean;
   isLoadingStream: boolean;
   vuLeft: number;
@@ -61,7 +62,6 @@ interface VintageRadioChassisProps {
   onOpenEqualizer: () => void;
   onOpenPlaylists: () => void;
   onOpenFavorites: () => void;
-  onOpenRecordings: () => void;
   onOpenSleepTimer: () => void;
   onOpenShare: () => void;
   onOpenSettings: () => void;
@@ -78,14 +78,16 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
   onVolumeChange,
   isPlaying,
   onTogglePlay,
-  isRecording,
-  onToggleRecording,
   stations,
   scanCountries,
   scanCountry,
   onScanCountryChange,
   sameFrequencyCount,
   activeStation,
+  isFavorite,
+  playlists,
+  onToggleFavorite,
+  onAddStationToPlaylist,
   isTuned,
   isLoadingStream,
   vuLeft,
@@ -105,13 +107,13 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
   onOpenEqualizer,
   onOpenPlaylists,
   onOpenFavorites,
-  onOpenRecordings,
   onOpenSleepTimer,
   onOpenShare,
   onOpenSettings,
   onOpenLegal,
   onOpenGuide,
 }) => {
+  const [isPlaylistPickerOpen, setIsPlaylistPickerOpen] = useState(false);
   const lang = settings.language || 'tr';
   const t = (key: Parameters<typeof getTranslation>[1]) => getTranslation(lang, key);
   const layoutFrame = {
@@ -340,15 +342,16 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
           </div>
         </div>
 
-        {/* 6 Vintage Chassis Push-Button Memory Presets Bar */}
+        {/* 20 Vintage Chassis Push-Button Memory Presets */}
         <div className="my-1.5 sm:my-4 p-1.5 sm:p-3 rounded-xl sm:rounded-2xl bg-black/50 border border-amber-900/50 flex flex-col sm:flex-row items-center justify-between gap-1 sm:gap-3">
           <span className="text-[9px] sm:text-[11px] font-mono-vintage uppercase tracking-wider text-amber-400 font-bold whitespace-nowrap">
             {t('memoryPresets')}
           </span>
 
-          <div className="grid grid-cols-6 gap-1 sm:gap-2 w-full sm:w-auto">
+          <div className="grid grid-cols-10 gap-1 sm:gap-2 w-full">
             {presets.map((p) => {
-              const isMatched = activeStation?.id === p.stationId;
+              const isMatched = Boolean(p.stationId) && activeStation?.id === p.stationId;
+              const isEmpty = !p.stationId;
               return (
                 <button
                   key={p.slot}
@@ -358,16 +361,18 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
                     e.preventDefault();
                     onSaveCurrentToPreset(p.slot);
                   }}
-                  title={`${p.label} (${t('presetTooltip')})`}
-                  className={`px-0.5 py-1 sm:px-3 sm:py-2 rounded-lg sm:rounded-xl border text-center transition-all cursor-pointer ${
+                  title={`${isEmpty ? `P${p.slot}` : p.label} (${t('presetTooltip')})`}
+                  className={`min-w-0 px-0.5 py-1 sm:px-2 sm:py-2 rounded-lg sm:rounded-xl border text-center transition-all cursor-pointer ${
                     isMatched
                       ? 'bg-gradient-to-b from-amber-600 to-amber-800 border-amber-300 text-black shadow-[0_0_12px_rgba(245,158,11,0.4)] scale-105'
-                      : 'bg-gradient-to-b from-[#3a2618] to-[#1e130a] border-amber-900/60 text-amber-200 hover:border-amber-600'
+                      : isEmpty
+                        ? 'bg-black/40 border-amber-950/70 text-amber-500/70 hover:border-amber-600'
+                        : 'bg-gradient-to-b from-[#3a2618] to-[#1e130a] border-amber-900/60 text-amber-200 hover:border-amber-600'
                   }`}
                 >
                   <div className="font-mono-vintage font-black text-[10px] sm:text-sm leading-tight">P{p.slot}</div>
-                  <div className="text-[7.5px] sm:text-[9px] font-mono truncate max-w-[42px] sm:max-w-[60px] opacity-80 mx-auto">
-                    {p.label.split(' ')[0]}
+                  <div className="text-[7.5px] sm:text-[9px] font-mono truncate opacity-80 mx-auto">
+                    {isEmpty ? '--' : p.label.split(' ')[0]}
                   </div>
                 </button>
               );
@@ -400,7 +405,56 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
           </div>
 
           {/* Quick Audio Stream Status Badge */}
-          <div className="flex items-center gap-1.5 sm:gap-2 self-end sm:self-auto shrink-0">
+          <div className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2 self-end sm:self-auto shrink-0">
+            {activeStation && (
+              <>
+                <button
+                  type="button"
+                  onClick={onToggleFavorite}
+                  aria-label={isFavorite ? t('removeFromFavs') : t('addToFavs')}
+                  title={isFavorite ? t('removeFromFavs') : t('addToFavs')}
+                  className={`px-2 py-1 rounded-lg border text-[9px] sm:text-xs font-semibold flex items-center gap-1 transition-colors ${
+                    isFavorite
+                      ? 'bg-red-950/60 border-red-700/60 text-red-300'
+                      : 'bg-black/40 border-amber-900/50 text-amber-200 hover:border-red-700/60 hover:text-red-300'
+                  }`}
+                >
+                  <Heart className={`w-3.5 h-3.5 ${isFavorite ? 'fill-current' : ''}`} />
+                  <span>{isFavorite ? t('removeFromFavs') : t('addToFavs')}</span>
+                </button>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsPlaylistPickerOpen((open) => !open)}
+                    aria-expanded={isPlaylistPickerOpen}
+                    aria-label={t('addToPlaylist')}
+                    title={t('addToPlaylist')}
+                    className="px-2 py-1 rounded-lg border border-amber-900/50 bg-black/40 text-amber-200 hover:border-amber-600 text-[9px] sm:text-xs font-semibold flex items-center gap-1 transition-colors"
+                  >
+                    <ListPlus className="w-3.5 h-3.5" />
+                    <span>{t('addToPlaylist')}</span>
+                  </button>
+                  {isPlaylistPickerOpen && (
+                    <div className="absolute right-0 top-full mt-1 z-30 w-52 max-h-52 overflow-y-auto rounded-xl border border-amber-700/60 bg-[#160e09] p-1.5 shadow-xl">
+                      <p className="px-2 py-1 text-[10px] font-bold text-amber-400">{t('choosePlaylist')}</p>
+                      {playlists.map((playlist) => (
+                        <button
+                          key={playlist.id}
+                          type="button"
+                          onClick={() => {
+                            onAddStationToPlaylist(playlist.id, activeStation);
+                            setIsPlaylistPickerOpen(false);
+                          }}
+                          className="block w-full rounded-lg px-2 py-1.5 text-left text-xs text-amber-100 hover:bg-amber-900/50"
+                        >
+                          {playlist.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
             {activeStation?.bitrate && (
               <span className="text-[8.5px] sm:text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/60 border border-amber-900 text-amber-300">
                 {activeStation.bitrate}k
@@ -423,7 +477,7 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
           </div>
         </div>
 
-        {/* Master Control Deck Buttons (Play, Rec, EQ, Timer, Explorer, Playlists, Share, Settings) */}
+        {/* Master Control Deck Buttons */}
         <div className="mt-2 sm:mt-5 pt-2 sm:pt-4 border-t border-amber-900/40 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2.5">
           {/* Master Play Button */}
           <button
@@ -442,21 +496,6 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
                 <span>{t('play')}</span>
               </>
             )}
-          </button>
-
-          {/* Live Radio Stream Audio Recorder */}
-          <button
-            type="button"
-            onClick={onToggleRecording}
-            className={`px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl sm:rounded-2xl border text-xs font-bold font-sans flex items-center gap-2 transition-all cursor-pointer min-h-[46px] sm:min-h-[44px] ${
-              isRecording
-                ? 'bg-red-600 text-white border-red-400 shadow-[0_0_15px_rgba(239,68,68,0.6)] animate-pulse'
-                : 'bg-black/40 hover:bg-red-950/40 border-amber-900/50 text-amber-200'
-            }`}
-            title={isRecording ? t('stopAndSave') : t('record')}
-          >
-            <Circle className={`w-3.5 h-3.5 ${isRecording ? 'fill-current' : 'text-red-500'}`} />
-            <span>{isRecording ? t('recording') : t('record')}</span>
           </button>
 
           {/* Worldwide Explorer */}
@@ -501,17 +540,6 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
           >
             <Sliders className="w-4.5 h-4.5 text-amber-400" />
             <span>{t('equalizer')}</span>
-          </button>
-
-          {/* Offline Tape Archive */}
-          <button
-            type="button"
-            onClick={onOpenRecordings}
-            className="p-2.5 sm:px-3 sm:py-2 rounded-xl bg-black/40 hover:bg-amber-950/60 border border-amber-900/50 text-amber-300 transition-colors cursor-pointer flex items-center gap-1.5 text-xs min-h-[46px] sm:min-h-[44px]"
-            title={t('tapes')}
-          >
-            <CassetteTape className="w-4.5 h-4.5 text-amber-400" />
-            <span>{t('tapes')}</span>
           </button>
 
           {/* Sleep Timer */}
@@ -562,7 +590,7 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
 
           <div className="flex items-center gap-2">
             <span className="text-[9px] sm:text-[10.5px] font-mono-vintage text-amber-300/85">
-              Geliştirici (Developer): <strong className="text-amber-200 font-bold">Şaban Çetinkaya</strong>
+              Geliştirici (Developer): <strong className="text-amber-200 font-bold">SoulzHem</strong>
             </span>
             {onOpenGuide && (
               <button
@@ -588,4 +616,3 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
     </div>
   );
 };
-

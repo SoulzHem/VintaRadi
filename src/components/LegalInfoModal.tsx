@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ThemeConfig } from '../utils/themeConfig';
 import { LanguageCode } from '../types';
-import { Shield, FileText, Copyright, Info, X, Check, ExternalLink, Mail, Code, Radio } from 'lucide-react';
+import { Shield, FileText, Copyright, Info, X, Check, ExternalLink, Code, Radio } from 'lucide-react';
 
 interface LegalInfoModalProps {
   isOpen: boolean;
@@ -144,8 +144,8 @@ export const LegalInfoModal: React.FC<LegalInfoModalProps> = ({
                 </h3>
                 <p className="text-xs text-amber-300/80 mt-1">
                   {language === 'tr'
-                    ? 'Gizliliğinize en üst düzeyde saygı duyuyoruz. VintaRadi, kullanıcılarının kişisel kimlik bilgilerini toplamaz, saklamaz veya üçüncü taraflarla paylaşmaz.'
-                    : 'We value your privacy utmost. VintaRadi does not collect, store, or sell personally identifiable information.'}
+                    ? 'VintaRadi hesap oluşturmaz ve uygulama sunucusunda favori ya da liste verisi saklamaz. Ancak istasyon kataloğu, yazı tipleri ve seçtiğiniz yayın için üçüncü taraf sunuculara bağlantı kurulur; bu sunucular bağlantı bilgilerini işleyebilir.'
+                    : 'VintaRadi has no user accounts and does not store favorites or playlists on an app server. It does connect to third-party servers for station listings, fonts, and selected streams; those operators may process connection data.'}
                 </p>
               </div>
 
@@ -156,8 +156,8 @@ export const LegalInfoModal: React.FC<LegalInfoModalProps> = ({
                 </h4>
                 <p className="text-amber-200/80 text-xs sm:text-sm pl-4">
                   {language === 'tr'
-                    ? 'VintaRadi uygulaması tamamen "Yerel Depolama (Local Storage / IndexedDB)" prensibiyle çalışır. Favori istasyonlarınız, özel çalma listeleriniz, 5-bant ekolayzır tercihleriniz ve kaydettiğiniz ses kasetleri yalnızca cihazınızın hafızasında tutulur; herhangi bir harici sunucuya aktarılmaz.'
-                    : 'VintaRadi operates on a local-first architecture. Your favorite stations, custom playlists, equalizer profiles, and recorded tapes are stored exclusively on your local device storage.'}
+                    ? 'Favoriler, çalma listeleri, ekolayzır tercihleri ve varsa kayıtlar tarayıcının Local Storage / IndexedDB alanında tutulur. İstasyon arama ve listeleme istekleri Radio Browser hizmetine gider; yayın dinlerken cihazınız seçilen istasyon sunucusuna doğrudan bağlanır.'
+                    : 'Favorites, playlists, equalizer preferences, and any recordings are kept in browser Local Storage / IndexedDB. Station search and listing requests go to Radio Browser; playback connects your device directly to the selected station server.'}
                 </p>
 
                 <h4 className="font-bold text-amber-300 text-sm flex items-center gap-2">
@@ -166,8 +166,8 @@ export const LegalInfoModal: React.FC<LegalInfoModalProps> = ({
                 </h4>
                 <p className="text-amber-200/80 text-xs sm:text-sm pl-4">
                   {language === 'tr'
-                    ? 'Bir radyo frekansını dinlediğinizde tarayıcınız, yayını doğrudan seçtiğiniz istasyonun sunucusundan alır. IP adresiniz standart HTTP/HTTPS protokolü gereği yayın sunucusuna iletilebilir.'
-                    : 'When playing an audio stream, your device establishes a direct connection with the public broadcast server of that specific station.'}
+                    ? 'Yayın sunucusu ve kullanılan üçüncü taraf hizmetler, IP adresiniz ve standart bağlantı günlükleri gibi teknik verileri alabilir. VintaRadi bu hizmetlerin veri uygulamalarını kontrol etmez.'
+                    : 'The stream host and third-party services may receive technical data such as your IP address and standard connection logs. VintaRadi does not control their data practices.'}
                 </p>
 
                 <h4 className="font-bold text-amber-300 text-sm flex items-center gap-2">
@@ -176,8 +176,8 @@ export const LegalInfoModal: React.FC<LegalInfoModalProps> = ({
                 </h4>
                 <p className="text-amber-200/80 text-xs sm:text-sm pl-4">
                   {language === 'tr'
-                    ? 'Uygulama içinde reklam izleme çerezleri, profil çıkarma yazılımları veya konum takip servisleri KULLANILMAMAKTADIR.'
-                    : 'No tracking cookies, behavioral profiling tools, or persistent geolocation monitors are employed in this application.'}
+                    ? 'Uygulama reklam veya davranışsal izleme SDK’sı kullanmaz. Radio Browser, Google Fonts ve istasyon sunucularına yapılan istekler ilgili hizmet sağlayıcılar tarafından kaydedilebilir.'
+                    : 'The app does not use advertising or behavioral-tracking SDKs. Requests to Radio Browser, Google Fonts, and station hosts may be logged by those service operators.'}
                 </p>
 
                 <h4 className="font-bold text-amber-300 text-sm flex items-center gap-2">
@@ -186,8 +186,8 @@ export const LegalInfoModal: React.FC<LegalInfoModalProps> = ({
                 </h4>
                 <p className="text-amber-200/80 text-xs sm:text-sm pl-4">
                   {language === 'tr'
-                    ? 'Kaset Kayıt (Tape Recorder) özelliği yalnızca tarayıcı/uygulama içindeki canlı akış sesini cihazınıza kaydetmek için Web Audio API kullanır. Ortam mikrofonunuz dinlenmez veya kaydedilmez.'
-                    : 'The tape recording feature captures the internal radio stream output to create offline audio files with zero background microphone capture.'}
+                    ? 'Kayıt kontrolleri şu anda arayüzde gizlidir. Kayıt işlevi yeniden etkinleştirilirse yalnızca uygulamadaki ses akışını işler; mikrofon erişimi kullanmaz. Oluşan dosyalar cihazda saklanır.'
+                    : 'Recording controls are currently hidden. If recording is re-enabled, it processes only the in-app audio stream and does not use microphone access. Resulting files are stored on the device.'}
                 </p>
               </div>
             </div>
@@ -204,8 +204,8 @@ export const LegalInfoModal: React.FC<LegalInfoModalProps> = ({
                 </h3>
                 <p className="text-xs text-amber-300/80 mt-1">
                   {language === 'tr'
-                    ? 'VintaRadi, internet üzerinden yayın yapan bağımsız radyo istasyonlarını analog bir kadranla sunan bir radyo istemcisidir. İstasyonlar Keşfet havuzundan ve uygulama içindeki sabit listeden oluşur.'
-                    : 'VintaRadi acts strictly as an analog tuner interface and client for publicly accessible online audio streams.'}
+                    ? 'VintaRadi, Radio Browser dizininden bulunan veya kullanıcı tarafından eklenen çevrimiçi istasyon bağlantılarını analog bir kadranla sunan bir istemcidir.'
+                    : 'VintaRadi is an analog tuner interface for online station links returned by the Radio Browser directory or added by users.'}
                 </p>
               </div>
 
@@ -215,8 +215,8 @@ export const LegalInfoModal: React.FC<LegalInfoModalProps> = ({
                 </h4>
                 <p className="text-amber-200/80 text-xs sm:text-sm">
                   {language === 'tr'
-                    ? 'VintaRadi herhangi bir radyo yayınının sahibi veya yayıncısı değildir. Uygulama, kamuya açık çevrimiçi radyo dizinlerini (Radio-Browser vb.) listeleyen ve kullanıcıların kendi akış bağlantılarını dinlemelerine olanak sağlayan bir arayüzdür.'
-                    : 'VintaRadi does not host, broadcast, or modify any stream content. It merely renders user-selected public URLs through an interactive analog receiver.'}
+                    ? 'VintaRadi yayın içeriklerini barındırmaz veya yeniden yayınlamaz; istasyon dizinleri ve bağlantıları sunar. Bir yayına internetten erişilebilmesi, yayının uygulamada listelenmesi veya dinlenmesi için izin bulunduğunu tek başına kanıtlamaz.'
+                    : 'VintaRadi does not host or retransmit broadcast content; it provides station listings and links. A stream being publicly reachable does not by itself establish permission to list or play it in this app.'}
                 </p>
 
                 <h4 className="font-bold text-amber-300 text-sm">
@@ -224,8 +224,8 @@ export const LegalInfoModal: React.FC<LegalInfoModalProps> = ({
                 </h4>
                 <p className="text-amber-200/80 text-xs sm:text-sm">
                   {language === 'tr'
-                    ? 'Radyo kanallarında çalınan müzikler, haberler, reklamlar veya konuşmalar tamamen yayını yapan radyo kuruluşunun sorumluluğundadır. Yayınların kesintiye uğramasından veya içeriğinden VintaRadi sorumlu tutulamaz.'
-                    : 'Broadcasting stations are solely responsible for their programming, licensing, and audio contents.'}
+                    ? 'İstasyon adları, logoları ve yayın içerikleri ilgili hak sahiplerine ait olabilir. Bu projede yer alan bağlantılar için lisans veya yayın izni doğrulanmış değildir. Hak sahibiyseniz kaldırma talebinizi GitHub deposundaki Issues bölümünden iletebilirsiniz; gönderiler herkese açık olabilir, kişisel veya gizli bilgi paylaşmayın.'
+                    : 'Station names, logos, and broadcast content may belong to their respective rights holders. Licenses or broadcast permissions for the links in this project have not been verified. Rights holders may submit removal requests through the repository Issues page; posts may be public, so do not include personal or confidential information.'}
                 </p>
 
                 <h4 className="font-bold text-amber-300 text-sm">
@@ -233,8 +233,8 @@ export const LegalInfoModal: React.FC<LegalInfoModalProps> = ({
                 </h4>
                 <p className="text-amber-200/80 text-xs sm:text-sm">
                   {language === 'tr'
-                    ? 'Uygulama kişisel dinleme ve nostaljik eğlence amaçlı sunulmaktadır.'
-                    : 'This application is provided for personal, non-commercial educational and entertainment usage.'}
+                    ? 'Uygulama bilgilendirme ve dinleme arayüzü olarak sunulur. Bu açıklama, yayınları veya görselleri kullanmak için lisans ya da hukuki izin yerine geçmez.'
+                    : 'The app is provided as an informational listening interface. This statement does not grant a license or legal permission to use broadcasts or images.'}
                 </p>
               </div>
             </div>
@@ -247,43 +247,31 @@ export const LegalInfoModal: React.FC<LegalInfoModalProps> = ({
             <div className="space-y-4">
               <div className="p-3 rounded-xl bg-amber-950/40 border border-amber-700/40">
                 <h3 className="text-base sm:text-lg font-display-vintage font-bold text-amber-200">
-                  {language === 'tr' ? 'Telif Hakkı & DMCA Kaldırma Bildirimi' : 'Copyright & DMCA Takedown Notice'}
+                  {language === 'tr' ? 'Telif Hakkı ve Kaldırma Talepleri' : 'Copyright & Removal Requests'}
                 </h3>
                 <p className="text-xs text-amber-300/80 mt-1">
                   {language === 'tr'
-                    ? 'Fikri mülkiyet haklarına ve radyo yayıncılarının haklarına tam saygı gösteriyoruz.'
-                    : 'We fully respect intellectual property and broadcast copyrights.'}
+                    ? 'Bu projede yer alan bağlantıların ve görsellerin kullanım izinleri doğrulanmış değildir. Herkese açık bağlantıların bulunması telif izni anlamına gelmez.'
+                    : 'Permissions for links and images included in this project have not been verified. Public availability does not imply copyright permission.'}
                 </p>
               </div>
 
               <div className="space-y-3">
                 <p className="text-amber-200/80 text-xs sm:text-sm">
                   {language === 'tr'
-                    ? 'Eğer bir radyo istasyonunun, logonun veya ses akışının telif hakkı sahibiyseniz ve istasyonunuzun VintaRadi dizininde yer almasını istemiyorsanız, lütfen aşağıdaki e-posta adresinden bizimle iletişime geçin. Talebiniz derhal işleme alınacak ve istasyon yayını kalıcı olarak listeden çıkarılacaktır.'
-                    : 'If you are the copyright holder of any stream or logo indexed in this app and wish for it to be removed, please contact us at the address below for immediate takedown.'}
+                    ? 'Bir istasyon, logo veya başka bir içerikle ilgili hak talebiniz varsa GitHub deposunun Issues sayfasında kaldırma talebi açabilirsiniz. Depo herkese açıktır; talebinize özel veya hassas bilgi eklemeyin.'
+                    : 'If you have a rights concern about a station, logo, or other content, you can open a removal request on the GitHub repository Issues page. The repository is public; do not include private or sensitive information.'}
                 </p>
 
-                <div className="p-4 rounded-xl bg-black/50 border border-amber-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-amber-950 text-amber-400 border border-amber-700/40">
-                      <Mail className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <span className="text-[11px] font-mono-vintage text-amber-400/80 block uppercase">
-                        {language === 'tr' ? 'İletişim & DMCA Bildirimi:' : 'DMCA Contact Email:'}
-                      </span>
-                      <strong className="text-sm font-mono text-amber-200">[email removed]</strong>
-                    </div>
-                  </div>
-
-                  <a
-                    href="mailto:[email removed]?subject=VintaRadi%20Station%20Takedown%20Request"
-                    className="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-black font-bold text-xs flex items-center gap-1.5 transition-colors"
-                  >
-                    <Mail className="w-3.5 h-3.5" />
-                    <span>{language === 'tr' ? 'E-posta Gönder' : 'Send Takedown Email'}</span>
-                  </a>
-                </div>
+                <a
+                  href="https://github.com/SoulzHem/VintaRadi/issues"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-3.5 py-2 text-xs font-bold text-black transition-colors hover:bg-amber-500"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  <span>{language === 'tr' ? 'GitHub kaldırma talebi' : 'Submit a GitHub removal request'}</span>
+                </a>
               </div>
             </div>
           </>
@@ -303,10 +291,12 @@ export const LegalInfoModal: React.FC<LegalInfoModalProps> = ({
                 <div className="p-3 rounded-xl bg-black/40 border border-amber-900/40">
                   <div className="flex items-center justify-between">
                     <strong className="text-amber-200 text-xs sm:text-sm font-bold">Radio-Browser Community API</strong>
-                    <span className="text-[10px] font-mono text-amber-400/70">Public Domain / CC0</span>
+                    <span className="text-[10px] font-mono text-amber-400/70">Community API</span>
                   </div>
                   <p className="text-[11px] text-amber-300/70 mt-1">
-                    Küresel radyo istasyonları dizini ve arama veritabanı açık kaynak topluluk projesi radio-browser.info tarafından sağlanmaktadır.
+                    <a href="https://www.radio-browser.info/" target="_blank" rel="noreferrer" className="underline underline-offset-2">
+                      İstasyon dizini Radio Browser topluluğundan alınır. Veri ve API kullanım koşulları için hizmetin güncel belgelerini inceleyin.
+                    </a>
                   </p>
                 </div>
 
@@ -347,7 +337,7 @@ export const LegalInfoModal: React.FC<LegalInfoModalProps> = ({
                     VintaRadi Superheterodyne Deluxe
                   </h3>
                   <p className="text-xs font-mono text-amber-400/80">
-                    Sürüm / Version 1.0.0 (Google Play & Web Edition)
+                    Sürüm / Version 1.0.0 (Web Edition)
                   </p>
                 </div>
               </div>
@@ -355,15 +345,11 @@ export const LegalInfoModal: React.FC<LegalInfoModalProps> = ({
               <div className="p-3 rounded-xl bg-black/40 border border-amber-900/40 space-y-2">
                 <div className="flex justify-between py-1 border-b border-amber-900/30 text-xs">
                   <span className="text-amber-400/70">Geliştirici (Developer):</span>
-                  <span className="font-semibold text-amber-200">Şaban Çetinkaya</span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-amber-900/30 text-xs">
-                  <span className="text-amber-400/70">Destek E-Posta:</span>
-                  <span className="font-mono text-amber-200">[email removed]</span>
+                  <span className="font-semibold text-amber-200">SoulzHem</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-amber-900/30 text-xs">
                   <span className="text-amber-400/70">Platform:</span>
-                  <span className="text-amber-200">Android PWA / TWA / Web</span>
+                  <span className="text-amber-200">Web / PWA</span>
                 </div>
                 <div className="flex justify-between py-1 text-xs">
                   <span className="text-amber-400/70">Ses Motoru:</span>

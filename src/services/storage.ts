@@ -1,5 +1,4 @@
 import { AppSettings, EqualizerSettings, OfflineRecording, PlayHistoryItem, Playlist, RadioStation } from '../types';
-import { CURATED_STATIONS } from '../data/curatedStations';
 
 const STORAGE_KEYS = {
   SETTINGS: 'vintaradi_settings_v1',
@@ -8,7 +7,7 @@ const STORAGE_KEYS = {
   PLAYLISTS: 'vintaradi_playlists_v1',
   HISTORY: 'vintaradi_history_v1',
   CUSTOM_STATIONS: 'vintaradi_custom_stations_v1',
-  CACHED_STATIONS: 'vintaradi_cached_stations_v1',
+  CACHED_STATIONS: 'vintaradi_cached_stations_v2',
   PRESET_BUTTONS: 'vintaradi_presets_v1',
 };
 
@@ -39,52 +38,7 @@ export const DEFAULT_EQ: EqualizerSettings = {
   preset: 'warm_tube',
 };
 
-export const DEFAULT_PLAYLISTS: Playlist[] = [
-  {
-    id: 'pl-vintage-night',
-    name: 'Gece Cazı & Gramofon',
-    description: 'Gece vakti sakinleşmek ve retro atmosferi yaşamak için seçilmiş nostaljik frekanslar.',
-    color: '#d97706',
-    icon: 'Moon',
-    stationIds: ['fm-jazz24-seattle', 'fm-swiss-jazz', 'am-gramophone-classics', 'am-classic-crooners'],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    isSystem: true,
-  },
-  {
-    id: 'pl-lofi-focus',
-    name: 'Lo-Fi & Çalışma Odaklanması',
-    description: 'Arka planda kesintisiz akıp giden meditatif ve ambient tınılar.',
-    color: '#10b981',
-    icon: 'Headphones',
-    stationIds: ['fm-somafm-groove', 'fm-voyage-istanbul', 'sw-deep-ambient-frequencies'],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    isSystem: true,
-  },
-  {
-    id: 'pl-anatolian-retro',
-    name: 'Anadolu Nostaljisi',
-    description: 'Unutulmaz Türk müziği, arabesk ve nostaljik şarkılar.',
-    color: '#ef4444',
-    icon: 'Radio',
-    stationIds: ['fm-kral-fm', 'fm-joy-fm', 'fm-voyage-istanbul'],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    isSystem: true,
-  },
-  {
-    id: 'pl-world-airwaves',
-    name: 'Kısa Dalga & Dünya Sesleri',
-    description: 'Kıtalararası yayınlar, küresel casus lounge ve sinematik temalar.',
-    color: '#8b5cf6',
-    icon: 'Globe',
-    stationIds: ['sw-bbc-world-service', 'fm-somafm-secretagent', 'fm-wwoz-neworleans', 'sw-synthwave-deepspace'],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    isSystem: true,
-  }
-];
+export const DEFAULT_PLAYLISTS: Playlist[] = [];
 
 // --- IndexedDB for Offline Recordings ---
 const DB_NAME = 'VintaRadi_DB';
@@ -143,7 +97,7 @@ export const StorageService = {
   getFavorites(): string[] {
     try {
       const raw = localStorage.getItem(STORAGE_KEYS.FAVORITES);
-      return raw ? JSON.parse(raw) : ['fm-joy-fm', 'fm-jazz24-seattle', 'fm-somafm-groove', 'am-grand-ole-opry'];
+      return raw ? JSON.parse(raw) : [];
     } catch {
       return [];
     }
@@ -212,18 +166,39 @@ export const StorageService = {
   getPresetButtons(): Array<{ slot: number; stationId: string; label: string }> {
     try {
       const raw = localStorage.getItem(STORAGE_KEYS.PRESET_BUTTONS);
-      if (raw) return JSON.parse(raw);
-      // Defaults 1-6 presets
-      return [
-        { slot: 1, stationId: 'fm-joy-fm', label: '88.2 JOY' },
-        { slot: 2, stationId: 'fm-jazz24-seattle', label: '95.8 JAZZ' },
-        { slot: 3, stationId: 'fm-somafm-groove', label: '92.4 LOFI' },
-        { slot: 4, stationId: 'fm-kral-fm', label: '97.4 KRAL' },
-        { slot: 5, stationId: 'am-grand-ole-opry', label: '650 WSM' },
-        { slot: 6, stationId: 'sw-bbc-world-service', label: '9.58 BBC' },
-      ];
+      const saved: unknown = raw ? JSON.parse(raw) : [];
+      const savedPresets = Array.isArray(saved) ? saved : [];
+
+      return Array.from({ length: 20 }, (_, index) => {
+        const slot = index + 1;
+        const fallback = {
+          slot,
+          stationId: '',
+          label: '--',
+        };
+        const stored = savedPresets.find(
+          (preset): preset is { slot: number; stationId: string; label: string } =>
+            preset !== null &&
+            typeof preset === 'object' &&
+            'slot' in preset &&
+            preset.slot === slot &&
+            'stationId' in preset &&
+            typeof preset.stationId === 'string' &&
+            'label' in preset &&
+            typeof preset.label === 'string',
+        );
+
+        return stored || fallback;
+      });
     } catch {
-      return [];
+      return Array.from({ length: 20 }, (_, index) => {
+        const slot = index + 1;
+        return {
+          slot,
+          stationId: '',
+          label: '--',
+        };
+      });
     }
   },
 

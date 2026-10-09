@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { FrequencyBand, RadioStation, LanguageCode } from '../types';
-import { FREQUENCY_RANGES } from '../data/curatedStations';
+import { FREQUENCY_RANGES } from '../data/frequencyRanges';
 import { ThemeConfig } from '../utils/themeConfig';
 import { getTranslation } from '../i18n/translations';
 import { ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
@@ -287,4 +287,3 @@ export const AnalogTunerDial: React.FC<AnalogTunerDialProps> = ({
     </div>
   );
 };
-

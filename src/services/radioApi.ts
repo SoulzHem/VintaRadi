@@ -1,5 +1,4 @@
 import { RadioStation, FrequencyBand } from '../types';
-import { CURATED_STATIONS } from '../data/curatedStations';
 import { StorageService } from './storage';
 
 // Radio-Browser API mirrors with automatic fallback
@@ -114,44 +113,6 @@ export const RadioApiService = {
       .map(t => t.trim())
       .filter(Boolean);
 
-    // Filter local curated stations with intelligent country & tag matching
-    const curatedMatches = CURATED_STATIONS.filter(st => {
-      // Band filter
-      if (band && band !== 'ALL' && st.band !== band) return false;
-
-      // Query filter (name, genre, description, country)
-      if (query.trim()) {
-        const q = query.toLowerCase();
-        const matchesQuery =
-          st.name.toLowerCase().includes(q) ||
-          st.genre.toLowerCase().includes(q) ||
-          (st.description && st.description.toLowerCase().includes(q)) ||
-          st.country.toLowerCase().includes(q) ||
-          st.tags?.some(t => t.toLowerCase().includes(q));
-        if (!matchesQuery) return false;
-      }
-
-      // Country filter
-      if (countryAliases.length > 0 || targetCode) {
-        const stCountry = st.country.toLowerCase();
-        const stCode = (st.countryCode || '').toUpperCase();
-        const matchesCode = targetCode ? stCode === targetCode : false;
-        const matchesAlias = countryAliases.some(alias => stCountry.includes(alias) || alias.includes(stCountry));
-        if (!matchesCode && !matchesAlias) return false;
-      }
-
-      // Tag filter
-      if (tagTokens.length > 0) {
-        const matchesTag = tagTokens.some(tok =>
-          st.genre.toLowerCase().includes(tok) ||
-          (st.tags && st.tags.some(t => t.toLowerCase().includes(tok)))
-        );
-        if (!matchesTag) return false;
-      }
-
-      return true;
-    });
-
     try {
       const queryParts: string[] = [];
       if (query.trim()) {
@@ -189,7 +150,7 @@ export const RadioApiService = {
       }
 
       const data = await response.json();
-      if (!Array.isArray(data)) return curatedMatches;
+      if (!Array.isArray(data)) return [];
 
       // Map API stations to our typed schema
       interface RadioBrowserItem {
@@ -252,20 +213,14 @@ export const RadioApiService = {
         ? mappedStations.filter(st => st.band === band)
         : mappedStations;
 
-      // Merge curated matches on top (curated first, then API stations, avoid duplicate IDs/URLs)
-      const allResults = [...curatedMatches];
-      for (const st of filteredApiStations) {
-        if (!allResults.some(r => r.id === st.id || r.url === st.url || (r.name.toLowerCase() === st.name.toLowerCase() && r.countryCode === st.countryCode))) {
-          allResults.push(st);
-        }
-      }
+      const allResults = filteredApiStations;
 
       // Cache results in background for offline speed
       StorageService.saveCachedStations(allResults);
 
       return allResults;
     } catch (err) {
-      console.warn('Radio API search fallback to cache & curated:', err);
+      console.warn('Radio API search fallback to cache:', err);
       const cached = StorageService.getCachedStations();
       
       // Filter cached items
@@ -281,8 +236,7 @@ export const RadioApiService = {
         return true;
       });
 
-      const combined = [...curatedMatches, ...cachedMatches];
-      return combined.filter((item, index, self) => index === self.findIndex(t => t.id === item.id));
+      return cachedMatches.filter((item, index, self) => index === self.findIndex(t => t.id === item.id));
     }
   },
 
@@ -290,4 +244,3 @@ export const RadioApiService = {
     return this.searchStations({ limit: 40, band });
   }
 };
-
