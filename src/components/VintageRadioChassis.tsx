@@ -37,6 +37,7 @@ interface VintageRadioChassisProps {
   scanCountry: string;
   onScanCountryChange: (country: string) => void;
   sameFrequencyCount: number;
+  onlineCount: number | null;
   activeStation: RadioStation | null;
   isFavorite: boolean;
   playlists: Playlist[];
@@ -83,6 +84,7 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
   scanCountry,
   onScanCountryChange,
   sameFrequencyCount,
+  onlineCount,
   activeStation,
   isFavorite,
   playlists,
@@ -173,16 +175,26 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
               </div>
             </div>
 
-            {/* Glowing Vacuum Tube Status Indicator */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 border border-amber-900/50 text-[11px] font-mono-vintage text-amber-300">
+            {/* Device connection and audio status */}
+            <div className="flex items-center gap-1 sm:gap-2">
               <div
-                className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${
-                  isPlaying
-                    ? 'bg-amber-400 shadow-[0_0_10px_#f59e0b]'
-                    : 'bg-amber-950 opacity-40'
-                }`}
-              />
-              <span>{isPlaying ? t('tubesWarm') : t('tubesStandby')}</span>
+                className="inline-flex items-center gap-1 rounded-full border border-amber-700/40 bg-black/45 px-1.5 py-1 text-[8px] sm:px-2.5 sm:text-[10px] font-mono-vintage text-amber-200/90"
+                aria-label={onlineCount === null ? 'Gerçek zamanlı bağlantı yapılandırılmamış' : `Bağlı dinleyici sayısı: ${onlineCount}`}
+                title={onlineCount === null ? 'Gerçek zamanlı sayaç için Supabase yapılandırması gerekir' : 'Şu anda bağlı uygulama sekmeleri'}
+              >
+                <span className="text-amber-400">●</span>
+                <span>{onlineCount === null ? '—' : onlineCount} {lang === 'tr' ? 'bağlı' : 'online'}</span>
+              </div>
+              <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 border border-amber-900/50 text-[11px] font-mono-vintage text-amber-300">
+                <div
+                  className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${
+                    isPlaying
+                      ? 'bg-amber-400 shadow-[0_0_10px_#f59e0b]'
+                      : 'bg-amber-950 opacity-40'
+                  }`}
+                />
+                <span>{isPlaying ? t('tubesWarm') : t('tubesStandby')}</span>
+              </div>
             </div>
           </div>
 
@@ -343,12 +355,12 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
         </div>
 
         {/* 20 Vintage Chassis Push-Button Memory Presets */}
-        <div className="my-1.5 sm:my-4 p-1.5 sm:p-3 rounded-xl sm:rounded-2xl bg-black/50 border border-amber-900/50 flex flex-col sm:flex-row items-center justify-between gap-1 sm:gap-3">
-          <span className="text-[9px] sm:text-[11px] font-mono-vintage uppercase tracking-wider text-amber-400 font-bold whitespace-nowrap">
+        <div className="my-1 sm:my-2.5 p-1 sm:p-2 rounded-xl bg-black/50 border border-amber-900/50">
+          <span className="mb-1 block text-center text-[8px] sm:text-[10px] font-mono-vintage uppercase tracking-wider text-amber-400 font-bold">
             {t('memoryPresets')}
           </span>
 
-          <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-10 gap-1 sm:gap-2 w-full">
+          <div className="grid grid-cols-10 gap-0.5 sm:gap-1.5 w-full">
             {presets.map((p) => {
               const isMatched = Boolean(p.stationId) && activeStation?.id === p.stationId;
               const isEmpty = !p.stationId;
@@ -362,7 +374,8 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
                     onSaveCurrentToPreset(p.slot);
                   }}
                   title={`${isEmpty ? `P${p.slot}` : p.label} (${t('presetTooltip')})`}
-                  className={`min-w-0 px-0.5 py-1 sm:px-2 sm:py-2 rounded-lg sm:rounded-xl border text-center transition-all cursor-pointer ${
+                  aria-label={`${isEmpty ? `P${p.slot}, boş hafıza` : `P${p.slot}, ${p.label}`} — ${t('presetTooltip')}`}
+                  className={`min-w-0 px-0 py-0.5 sm:px-1 sm:py-1 rounded-md sm:rounded-lg border text-center transition-all cursor-pointer ${
                     isMatched
                       ? 'bg-gradient-to-b from-amber-600 to-amber-800 border-amber-300 text-black shadow-[0_0_12px_rgba(245,158,11,0.4)] scale-105'
                       : isEmpty
@@ -370,8 +383,8 @@ export const VintageRadioChassis: React.FC<VintageRadioChassisProps> = ({
                         : 'bg-gradient-to-b from-[#3a2618] to-[#1e130a] border-amber-900/60 text-amber-200 hover:border-amber-600'
                   }`}
                 >
-                  <div className="font-mono-vintage font-black text-[10px] sm:text-sm leading-tight">P{p.slot}</div>
-                  <div className="min-h-[2.2em] text-[8px] sm:text-[10px] font-mono leading-tight line-clamp-2 break-words opacity-90 mx-auto">
+                  <div className="font-mono-vintage font-black text-[8px] sm:text-[11px] leading-tight">{p.slot}</div>
+                  <div className="min-h-[1em] text-[6px] sm:text-[8px] font-mono leading-tight line-clamp-1 break-all opacity-90 mx-auto">
                     {isEmpty ? '--' : p.label || `P${p.slot}`}
                   </div>
                 </button>
