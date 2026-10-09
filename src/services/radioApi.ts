@@ -11,6 +11,7 @@ const API_MIRRORS = [
 
 const KNOWN_UNPLAYABLE_STATION_IDS = new Set([
   'rb_15812c43-c571-4770-9065-b64b4d5338d1',
+  'rb_f3dfbec0-8ddb-457c-94cd-368631337c0f',
 ]);
 
 let currentMirrorIndex = 0;
