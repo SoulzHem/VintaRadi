@@ -1,6 +1,7 @@
 import { RadioStation, FrequencyBand } from '../types';
 import { StorageService } from './storage';
 import { isPlayableStreamUrl } from '../utils/streamUrl';
+import { FEATURED_STATIONS } from '../data/featuredStations';
 
 // Radio-Browser API mirrors with automatic fallback
 const API_MIRRORS = [
@@ -15,6 +16,27 @@ const KNOWN_UNPLAYABLE_STATION_IDS = new Set([
 ]);
 
 let currentMirrorIndex = 0;
+
+function getMatchingFeaturedStations(
+  query: string,
+  targetCode: string | undefined,
+  countryAliases: string[],
+  tagTokens: string[],
+  band?: FrequencyBand | 'ALL',
+): RadioStation[] {
+  const normalizedQuery = query.trim().toLowerCase();
+  return FEATURED_STATIONS.filter((station) => {
+    if (normalizedQuery && !station.name.toLowerCase().includes(normalizedQuery)) return false;
+    if (targetCode && station.countryCode !== targetCode) return false;
+    if (!targetCode && countryAliases.length > 0 &&
+      !countryAliases.some((alias) => station.country.toLowerCase().includes(alias))) return false;
+    if (tagTokens.length > 0 &&
+      !tagTokens.some((token) => station.tags?.some((stationTag) => stationTag.includes(token)) ||
+        station.genre.toLowerCase().includes(token))) return false;
+    if (band && band !== 'ALL' && station.band !== band) return false;
+    return true;
+  });
+}
 
 function getApiBase(): string {
   return API_MIRRORS[currentMirrorIndex];
@@ -223,7 +245,10 @@ export const RadioApiService = {
         ? mappedStations.filter(st => st.band === band)
         : mappedStations;
 
-      const allResults = filteredApiStations;
+      const featuredStations = getMatchingFeaturedStations(query, targetCode, countryAliases, tagTokens, band);
+      const allResults = [...featuredStations, ...filteredApiStations].filter(
+        (station, index, stations) => stations.findIndex((candidate) => candidate.id === station.id || candidate.url === station.url) === index,
+      );
 
       // Cache results in background for offline speed
       StorageService.saveCachedStations(allResults);
@@ -248,7 +273,10 @@ export const RadioApiService = {
         return true;
       });
 
-      return cachedMatches.filter((item, index, self) => index === self.findIndex(t => t.id === item.id));
+      const featuredStations = getMatchingFeaturedStations(query, targetCode, countryAliases, tagTokens, band);
+      return [...featuredStations, ...cachedMatches].filter(
+        (item, index, stations) => stations.findIndex((candidate) => candidate.id === item.id || candidate.url === item.url) === index,
+      );
     }
   },
 

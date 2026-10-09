@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import type Hls from 'hls.js';
 import {
   FrequencyBand,
   RadioStation,
@@ -17,7 +18,7 @@ import { syncService, SyncPayload } from './services/syncService';
 import { RadioApiService, resolveCountryInfo } from './services/radioApi';
 import { THEMES } from './utils/themeConfig';
 import { generateWeeklyRecommendation } from './utils/recommendationEngine';
-import { isPlayableStreamUrl } from './utils/streamUrl';
+import { isHlsStreamUrl, isPlayableStreamUrl } from './utils/streamUrl';
 import { getTranslation } from './i18n/translations';
 
 /** API sonuçlarını tekrarsız şekilde havuza ekler. */
@@ -113,12 +114,18 @@ export default function App() {
 
   // HTML Audio Element Ref
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const meterIntervalRef = useRef<number | null>(null);
   const playStartTimeRef = useRef<number>(0);
   const playRequestIdRef = useRef(0);
   const scanTimerRef = useRef<number | null>(null);
   const isScanningRef = useRef(false);
   const scanCursorRef = useRef(0);
+
+  useEffect(() => () => {
+    hlsRef.current?.destroy();
+    hlsRef.current = null;
+  }, []);
 
   // Pool of user-provided and directory stations.
   const allStations = React.useMemo(() => {
@@ -373,12 +380,54 @@ export default function App() {
     try {
       await audioEngine.resumeContext();
       const audio = audioRef.current;
+      hlsRef.current?.destroy();
+      hlsRef.current = null;
       audio.pause();
       audio.removeAttribute('src');
       audio.load();
       if (requestId !== playRequestIdRef.current) return;
-      audio.src = streamUrl;
-      audio.load();
+      if (isHlsStreamUrl(streamUrl)) {
+        const { default: HlsPlayer } = await import('hls.js/light');
+        if (requestId !== playRequestIdRef.current) return;
+        if (HlsPlayer.isSupported()) {
+          const hls = new HlsPlayer();
+          hlsRef.current = hls;
+          await new Promise<void>((resolve, reject) => {
+            let manifestReady = false;
+            const timeout = window.setTimeout(() => reject(new Error('HLS manifest timed out')), 15000);
+            hls.on(HlsPlayer.Events.MANIFEST_PARSED, () => {
+              manifestReady = true;
+              window.clearTimeout(timeout);
+              resolve();
+            });
+            hls.on(HlsPlayer.Events.ERROR, (_event, data) => {
+              if (!data.fatal) return;
+              if (hlsRef.current === hls) {
+                hls.destroy();
+                hlsRef.current = null;
+              }
+              if (!manifestReady) {
+                window.clearTimeout(timeout);
+                reject(new Error(`HLS ${data.type}: ${data.details}`));
+                return;
+              }
+              console.warn('HLS playback error:', data.type, data.details);
+              setIsPlaying(false);
+              setIsLoadingStream(false);
+              showToast('Yayın kesildi', 'Bu istasyonun HLS akışı oynatılamadı.');
+            });
+            hls.loadSource(streamUrl);
+            hls.attachMedia(audio);
+          });
+        } else {
+          audio.src = streamUrl;
+          audio.load();
+        }
+      } else {
+        audio.src = streamUrl;
+        audio.load();
+      }
+      if (requestId !== playRequestIdRef.current) return;
       await audio.play();
       if (requestId !== playRequestIdRef.current) return;
       setIsPlaying(true);
@@ -387,6 +436,10 @@ export default function App() {
     } catch (err) {
       if (requestId !== playRequestIdRef.current || (err instanceof DOMException && err.name === 'AbortError')) {
         return;
+      }
+      if (hlsRef.current && isHlsStreamUrl(streamUrl)) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
       }
       if (err instanceof DOMException && err.name === 'NotSupportedError') {
         showToast('Yayın desteklenmiyor', 'Bu istasyonun ses biçimi tarayıcı tarafından oynatılamıyor.');
@@ -536,6 +589,8 @@ export default function App() {
     isScanningRef.current = true;
     setIsTuned(false);
     if (audioRef.current) {
+      hlsRef.current?.destroy();
+      hlsRef.current = null;
       audioRef.current.pause();
       audioRef.current.removeAttribute('src');
       audioRef.current.load();
