@@ -20,6 +20,7 @@ import { THEMES } from './utils/themeConfig';
 import { generateWeeklyRecommendation } from './utils/recommendationEngine';
 import { isHlsStreamUrl, isPlayableStreamUrl } from './utils/streamUrl';
 import { getTranslation } from './i18n/translations';
+import { Analytics } from '@vercel/analytics/react';
 
 /** API sonuçlarını tekrarsız şekilde havuza ekler. */
 function mergeApiStations(prev: RadioStation[], incoming: RadioStation[]): RadioStation[] {
@@ -1224,6 +1225,7 @@ export default function App() {
           }
         }
       `}</style>
+      <Analytics />
     </div>
   );
 }
