@@ -41,6 +41,7 @@ import { ShareSyncModal } from './components/ShareSyncModal';
 import { SettingsModal } from './components/SettingsModal';
 import { LegalInfoModal } from './components/LegalInfoModal';
 import { UserGuideModal } from './components/UserGuideModal';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 export default function App() {
   // App Persistent State
@@ -1224,6 +1225,9 @@ export default function App() {
           }
         }
       `}</style>
+
+      {/* Vercel Speed Insights */}
+      <SpeedInsights />
     </div>
   );
 }
